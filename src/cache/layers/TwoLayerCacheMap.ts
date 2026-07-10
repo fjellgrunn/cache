@@ -8,6 +8,7 @@ import {
 } from "@fjell/types";
 import { CacheMap } from "../../CacheMap";
 import { QueryMetadata, QueryResult, TwoLayerCacheOptions } from "../types/TwoLayerTypes";
+import { createNormalizedHashFunction } from "../../normalization";
 import LibLogger from "../../logger";
 
 const logger = LibLogger.get('TwoLayerCacheMap');
@@ -39,6 +40,11 @@ export class TwoLayerCacheMap<
 
   // Query metadata tracking for enhanced TTL and completeness
   private queryMetadataMap: Map<string, QueryMetadata> = new Map();
+
+  // Normalize string/number pk/lk so invalidation matches across key representations
+  private readonly normalizedHashFunction = createNormalizedHashFunction<
+    ComKey<S, L1, L2, L3, L4, L5> | PriKey<S>
+  >();
 
   constructor(
     private underlyingCache: CacheMap<V, S, L1, L2, L3, L4, L5>,
@@ -203,14 +209,25 @@ export class TwoLayerCacheMap<
       }
     }
     
-    // Check expiration if we have metadata
+    // Check expiration if we have metadata (coerce string dates from persistence)
     if (metadata) {
+      const expiresAt = metadata.expiresAt instanceof Date
+        ? metadata.expiresAt
+        : new Date(metadata.expiresAt as unknown as string | number);
+      // Keep in-memory metadata as Date for subsequent comparisons
+      if (!(metadata.expiresAt instanceof Date)) {
+        metadata.expiresAt = expiresAt;
+      }
+      if (metadata.createdAt && !(metadata.createdAt instanceof Date)) {
+        metadata.createdAt = new Date(metadata.createdAt as unknown as string | number);
+      }
+
       const now = new Date();
-      const isExpired = metadata.expiresAt < now;
+      const isExpired = expiresAt.getTime() < now.getTime();
       logger.debug('QUERY_CACHE: Query metadata found', {
         queryHash,
         isExpired,
-        expiresAt: metadata.expiresAt.toISOString(),
+        expiresAt: expiresAt.toISOString(),
         now: now.toISOString(),
         isComplete: metadata.isComplete,
         queryType: metadata.queryType
@@ -220,7 +237,7 @@ export class TwoLayerCacheMap<
         // Query has expired - clean it up
         logger.debug('QUERY_CACHE: Query result EXPIRED, removing', {
           queryHash,
-          expiresAt: metadata.expiresAt.toISOString(),
+          expiresAt: expiresAt.toISOString(),
           now: now.toISOString()
         });
         await this.deleteQueryResult(queryHash);
@@ -319,13 +336,13 @@ export class TwoLayerCacheMap<
     itemKey: ComKey<S, L1, L2, L3, L4, L5> | PriKey<S>
   ): Promise<string[]> {
     const affectedQueries: string[] = [];
-    const itemKeyStr = JSON.stringify(itemKey);
+    const itemKeyHash = this.normalizedHashFunction(itemKey);
 
     // Scan all cached query results to find ones containing this item
-    for (const [queryHash, metadata] of this.queryMetadataMap.entries()) {
+    for (const [queryHash] of this.queryMetadataMap.entries()) {
       const queryResult = await this.underlyingCache.getQueryResult(queryHash);
 
-      if (queryResult && queryResult.some(key => JSON.stringify(key) === itemKeyStr)) {
+      if (queryResult && queryResult.some(key => this.normalizedHashFunction(key) === itemKeyHash)) {
         affectedQueries.push(queryHash);
       }
     }

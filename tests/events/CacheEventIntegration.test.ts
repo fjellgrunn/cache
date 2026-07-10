@@ -135,8 +135,9 @@ describe('Cache Event Integration', () => {
 
       await cache.operations.set(testItem.key, testItem);
 
-      expect(eventLog).toHaveLength(1);
+      expect(eventLog).toHaveLength(2);
       expect(eventLog[0].type).toBe('item_set');
+      expect(eventLog[1].type).toBe('query_invalidated');
       expect(eventLog[0]).toMatchObject({
         key: testItem.key,
         item: testItem,
@@ -311,9 +312,11 @@ describe('Cache Event Integration', () => {
       const testItem = createTestItem('multi', 'Multi Sub Test', 42);
       await cache.operations.set(testItem.key, testItem);
 
-      expect(log1).toHaveLength(1);
-      expect(log2).toHaveLength(1);
+      expect(log1).toHaveLength(2);
+      expect(log2).toHaveLength(2);
       expect(log1[0]).toEqual(log2[0]);
+      expect(log1[0].type).toBe('item_set');
+      expect(log1[1].type).toBe('query_invalidated');
 
       sub1.unsubscribe();
       sub2.unsubscribe();
@@ -328,8 +331,8 @@ describe('Cache Event Integration', () => {
       const testItem = createTestItem('cleanup', 'Cleanup Test', 42);
       await cache.operations.set(testItem.key, testItem);
 
-      // Original subscription should still work
-      expect(eventLog).toHaveLength(1);
+      // Original subscription should still work (item_set + query_invalidated)
+      expect(eventLog).toHaveLength(2);
       // Unsubscribed listener should not be called
       expect(listener).not.toHaveBeenCalled();
     });
@@ -417,8 +420,8 @@ describe('Cache Event Integration', () => {
 
       expect(errorListener).toHaveBeenCalled();
       expect(normalListener).toHaveBeenCalled();
-      // Original listener should also have been called
-      expect(eventLog).toHaveLength(1);
+      // Original listener should also have been called (item_set + query_invalidated)
+      expect(eventLog).toHaveLength(2);
     });
   });
 });

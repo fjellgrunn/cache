@@ -91,6 +91,7 @@ describe('set operation', () => {
       clearMetadata: vi.fn(),
       getCurrentSize: vi.fn(),
       getSizeLimits: vi.fn(),
+      clearQueryResults: vi.fn().mockResolvedValue(undefined),
       size: 0
     } as any;
 
@@ -231,6 +232,7 @@ describe('set operation', () => {
         clearMetadata: vi.fn(),
         getCurrentSize: vi.fn(),
         getSizeLimits: vi.fn(),
+        clearQueryResults: vi.fn().mockResolvedValue(undefined),
         size: 0
       } as any;
 
@@ -288,6 +290,7 @@ describe('set operation', () => {
         clearMetadata: vi.fn(),
         getCurrentSize: vi.fn(),
         getSizeLimits: vi.fn(),
+        clearQueryResults: vi.fn().mockResolvedValue(undefined),
         size: 0
       } as any;
 
@@ -342,6 +345,7 @@ describe('set operation', () => {
         clearMetadata: vi.fn(),
         getCurrentSize: vi.fn(),
         getSizeLimits: vi.fn(),
+        clearQueryResults: vi.fn().mockResolvedValue(undefined),
         size: 0
       } as any;
 
@@ -470,6 +474,7 @@ describe('set operation', () => {
         clearMetadata: vi.fn(),
         getCurrentSize: vi.fn(),
         getSizeLimits: vi.fn(),
+        clearQueryResults: vi.fn().mockResolvedValue(undefined),
         size: 0
       } as any;
 
@@ -784,6 +789,20 @@ describe('set operation', () => {
           item: item,
           previousItem: undefined,
           source: 'cache'
+        })
+      );
+    });
+
+    it('should clear query results and emit query_invalidated', async () => {
+      const item = createTestItem(key1, 'item1', 'Test Item 1', 100);
+      await set(key1, item, context);
+
+      expect(mockCacheMap.clearQueryResults).toHaveBeenCalled();
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'query_invalidated',
+          reason: 'item_changed',
+          context: expect.objectContaining({ operation: 'set' })
         })
       );
     });

@@ -239,6 +239,24 @@ describe('TwoLayerCacheMap', () => {
       expect(await twoLayerCache.hasQueryResult(queryHash)).toBe(false);
     });
 
+    it('should invalidate queries when item key string/number representation differs', async () => {
+      const stringKey = { kt: 'test', pk: '42' } as PriKey<'test'>;
+      const numberKey = { kt: 'test', pk: 42 as any } as PriKey<'test'>;
+      const item = {
+        ...createTestItem('42', 'Numeric-ish Item', 100),
+        key: stringKey
+      };
+
+      await twoLayerCache.set(stringKey, item);
+      const queryHash = 'normalized-key-query';
+      await twoLayerCache.setQueryResult(queryHash, [stringKey]);
+      expect(await twoLayerCache.hasQueryResult(queryHash)).toBe(true);
+
+      // Update via number pk — must still invalidate the query keyed with string pk
+      await twoLayerCache.set(numberKey, { ...item, key: numberKey, value: 999 });
+      expect(await twoLayerCache.hasQueryResult(queryHash)).toBe(false);
+    });
+
     it('should handle invalidation of non-existent queries gracefully', async () => {
       const item = createTestItem('test1', 'Test Item', 100);
       

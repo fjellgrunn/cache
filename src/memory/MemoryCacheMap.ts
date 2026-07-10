@@ -208,10 +208,11 @@ export class MemoryCacheMap<
       }
     }
 
-    // Copy query result cache
+    // Copy query result cache (including metadata used by two-layer TTL)
     for (const [queryHash, entry] of Object.entries(this.queryResultCache)) {
       clone.queryResultCache[queryHash] = {
-        itemKeys: [...entry.itemKeys] // Shallow copy of the array
+        itemKeys: [...entry.itemKeys],
+        metadata: entry.metadata
       };
     }
 

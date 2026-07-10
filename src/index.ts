@@ -89,4 +89,10 @@ export * from './events';
 export { createAggregator, toCacheConfig } from './Aggregator';
 export type { Aggregator, CacheConfig, AggregateConfig } from './Aggregator';
 
+// Two-layer cache (item + query layers)
+export { TwoLayerFactory } from './cache/TwoLayerFactory';
+export type { TwoLayerConfig } from './cache/TwoLayerFactory';
+export { TwoLayerCacheMap } from './cache/layers/TwoLayerCacheMap';
+export type { TwoLayerCacheOptions } from './cache/types/TwoLayerTypes';
+
 export * from './Registry';
