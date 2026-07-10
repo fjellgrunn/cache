@@ -70,6 +70,7 @@ describe('action operation', () => {
       set: vi.fn(),
       delete: vi.fn(),
       invalidateItemKeys: vi.fn(),
+      clearQueryResults: vi.fn().mockResolvedValue(undefined),
       includesKey: vi.fn(),
       clear: vi.fn(),
       keys: vi.fn(),
@@ -152,6 +153,7 @@ describe('action operation', () => {
 
       // Verify cache invalidation before action
       expect(mockCacheMap.invalidateItemKeys).toHaveBeenCalledWith([priKey1]);
+      expect(mockCacheMap.clearQueryResults).toHaveBeenCalled();
 
       // Verify cache set after action
       expect(mockCacheMap.set).toHaveBeenCalledWith(updatedItem.key, updatedItem);

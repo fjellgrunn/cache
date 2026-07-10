@@ -277,9 +277,9 @@ export class EnhancedMemoryCacheMap<
       }
     }
 
-    // Copy query results
+    // Copy query results (including metadata used by two-layer TTL)
     for (const [queryHash, entry] of Object.entries(this.queryResultCache)) {
-      await clone.setQueryResult(queryHash, entry.itemKeys);
+      await clone.setQueryResult(queryHash, entry.itemKeys, entry.metadata);
     }
 
     return clone;

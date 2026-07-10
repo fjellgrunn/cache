@@ -72,6 +72,10 @@ async function executeActionLogic<
   logger.debug('Invalidating item key before action', { key });
   cacheMap.invalidateItemKeys([key]);
 
+  // Clear query results — actions can change fields that affect query membership
+  // (selective invalidateItemKeys only drops queries that already contained the key)
+  await cacheMap.clearQueryResults();
+
   const result = await api.action(key, action, body);
   const updated = result[0];
   const affectedItems = result[1];

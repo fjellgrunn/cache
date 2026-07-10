@@ -2,6 +2,7 @@ import { ComKey, LocKeyArray, PriKey } from "@fjell/types";
 import { isComKey, toKeyTypeArray } from "@fjell/core";
 import { Registry } from "@fjell/registry";
 import { Cache } from "../Cache";
+import { CacheEventFactory } from "../events/CacheEventFactory";
 import LibLogger from "../logger";
 
 const logger = LibLogger.get('cache', 'utils', 'cacheInvalidation');
@@ -86,6 +87,15 @@ export const invalidateCachesByKeysAndKeyTypes = async (
         // Also clear query results since the data has changed
         await cacheInstance.cacheMap.clearQueryResults();
 
+        // Notify subscribers (e.g. React hooks) so they refetch
+        cacheInstance.eventEmitter.emit(
+          CacheEventFactory.createQueryInvalidatedEvent(
+            [],
+            'item_changed',
+            { source: 'operation', context: { operation: 'action_invalidation' } }
+          )
+        );
+
         logger.debug('Successfully invalidated specific items in cache', {
           keyTypes,
           invalidatedCount: cacheKeys.length
@@ -113,6 +123,14 @@ export const invalidateCachesByKeysAndKeyTypes = async (
         // For location-based invalidation, we clear query results since
         // the location data has changed
         await cacheInstance.cacheMap.clearQueryResults();
+
+        cacheInstance.eventEmitter.emit(
+          CacheEventFactory.createQueryInvalidatedEvent(
+            [],
+            'location_changed',
+            { source: 'operation', context: { operation: 'action_invalidation' } }
+          )
+        );
 
         logger.debug('Successfully cleared query results for location', { keyTypes });
       }

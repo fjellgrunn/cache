@@ -17,6 +17,9 @@ const mockCache = {
   cacheMap: {
     invalidateItemKeys: vi.fn().mockResolvedValue(undefined),
     clearQueryResults: vi.fn().mockResolvedValue(undefined)
+  },
+  eventEmitter: {
+    emit: vi.fn()
   }
 } as unknown as Cache<any, any, any, any, any, any, any>;
 
@@ -110,6 +113,10 @@ describe('Cache Invalidation Utils', () => {
       expect(mockRegistry.get).toHaveBeenCalledWith(['order']);
       expect(mockRegistry.get).toHaveBeenCalledWith(['customer']);
       expect(mockCache.cacheMap.clearQueryResults).toHaveBeenCalledTimes(2);
+      expect(mockCache.eventEmitter.emit).toHaveBeenCalledTimes(2);
+      expect(mockCache.eventEmitter.emit).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'query_invalidated', reason: 'location_changed' })
+      );
     });
 
     it('should handle registry.get returning null', async () => {

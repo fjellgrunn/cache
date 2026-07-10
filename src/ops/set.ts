@@ -201,9 +201,21 @@ export const set = async <
     logger.debug('CACHE_OP: Removed evicted item', { evictedKey });
   }
 
+  // Clear query results — a set can change membership of cached queries
+  // (new items, field changes) the same way create/update do.
+  await cacheMap.clearQueryResults();
+
   // Emit event
   const event = CacheEventFactory.itemSet(key, v as V, previousItem);
   eventEmitter.emit(event);
+
+  // Emit query invalidated so React hooks / subscribers can refetch
+  const queryInvalidatedEvent = CacheEventFactory.createQueryInvalidatedEvent(
+    [],
+    'item_changed',
+    { source: 'operation', context: { operation: 'set' } }
+  );
+  eventEmitter.emit(queryInvalidatedEvent);
 
   const totalDuration = Date.now() - startTime;
   logger.debug('CACHE_OP: set() completed', {
